@@ -4,6 +4,7 @@ import ThoughtInput from "@/components/ThoughtInput";
 import ThoughtsList from "@/components/ThoughtsList";
 import { supabase } from "@/lib/supabase";
 import { Thought } from "@/types/database";
+import ApiKeyInput from "@/components/ApiKeyInput";
 
 export default function Home() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
@@ -55,11 +56,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
+    <main className="min-h-screen p-8 bg-white">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">
-          Daily Encouragement
-        </h1>
+        <ApiKeyInput />
         <ThoughtInput />
         <div className="mt-12">
           <ThoughtsList thoughts={thoughts} onDelete={handleDelete} />

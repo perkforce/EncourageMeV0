@@ -1,28 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../lib/supabase";
-import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "./ui/dialog";
-import { Textarea } from "./ui/textarea";
-
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { supabase } from "@/lib/supabase";
+import Modal from "./Modal";
 
 export default function ThoughtInput() {
-  const [isOpen, setIsOpen] = useState(false);
   const [thought, setThought] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [encouragement, setEncouragement] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  async function handleEncourage() {
-    setIsOpen(true);
-    setAiResponse(""); // Reset previous response
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const apiKey = localStorage.getItem("openai_api_key");
+    if (!apiKey) {
+      alert("Please enter your OpenAI API key first");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/thoughts", {
@@ -30,72 +27,57 @@ export default function ThoughtInput() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ thought }),
+        body: JSON.stringify({ thought, apiKey }),
       });
 
-      if (!response.ok) throw new Error("Failed to get encouragement");
-
       const data = await response.json();
-      setAiResponse(data.message);
 
-      // Save both thought and encouragement to Supabase
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      // Save to Supabase
       await supabase.from("thoughts").insert([
         {
           content: thought,
-          encouragement: data.message, // Save the AI response in the encouragement field
+          encouragement: data.message,
         },
       ]);
-    } catch (error) {
-      setAiResponse("Sorry, I couldn't generate encouragement at this time.");
-      console.error("Error:", error);
-    }
-  }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-
-    try {
-      await supabase.from("thoughts").insert([{ content: thought }]);
-      setIsOpen(false);
+      setEncouragement(data.message);
+      setIsModalOpen(true);
       setThought("");
     } catch (error) {
-      console.error("Error inserting thought:", error);
+      console.error("Error:", error);
+      alert("Failed to submit thought");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="space-y-4">
-      <Textarea
-        placeholder="How are you feeling today?"
-        value={thought}
-        onChange={(e) => setThought(e.target.value)}
-        className="min-h-[120px]"
+    <div className="max-w-md mx-auto">
+      <form onSubmit={handleSubmit}>
+        <textarea
+          value={thought}
+          onChange={(e) => setThought(e.target.value)}
+          placeholder="Share your thoughts..."
+          className="w-full p-4 border border-gray-300 rounded-lg mb-3 min-h-[150px] focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+        />
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300"
+        >
+          {isLoading ? "Generating..." : "Encourage Me"}
+        </button>
+      </form>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        encouragement={encouragement}
       />
-
-      <div className="text-center">
-        <Button onClick={handleEncourage} disabled={!thought.trim()}>
-          Encourage Me
-        </Button>
-      </div>
-
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Your Encouragement</DialogTitle>
-            <DialogDescription>
-              Here&apos;s some encouragement based on your feelings
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            {aiResponse || "Loading your encouragement..."}
-          </div>
-
-          <DialogFooter>
-            <Button onClick={() => setIsOpen(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
