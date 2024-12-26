@@ -13,10 +13,11 @@ import {
 } from "./ui/dialog";
 import { Textarea } from "./ui/textarea";
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 export default function ThoughtInput() {
   const [isOpen, setIsOpen] = useState(false);
   const [thought, setThought] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
 
   async function handleEncourage() {
@@ -52,7 +53,6 @@ export default function ThoughtInput() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
       await supabase.from("thoughts").insert([{ content: thought }]);
@@ -60,8 +60,6 @@ export default function ThoughtInput() {
       setThought("");
     } catch (error) {
       console.error("Error inserting thought:", error);
-    } finally {
-      setIsLoading(false);
     }
   }
 

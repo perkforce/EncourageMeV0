@@ -16,9 +16,9 @@ export default function Home() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "thoughts" },
-        (payload) => {
+        (payload: { new: Thought }) => {
           // Add new thought to the beginning of the list
-          setThoughts((prev) => [payload.new, ...prev]);
+          setThoughts((prev) => [payload.new as Thought, ...prev]);
         }
       )
       .on(
